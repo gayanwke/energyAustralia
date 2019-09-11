@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+<title> Akber Iqbal | Energy Australia test </title>
+</head>
+<body>
+    <div ng-app="myApp" ng-controller="eAuController">
+
+        <h1>
+Energy Australia test | Akber Iqbal
+        </h1>
+        <h3> Showing the final results of the api object...</h3>
+        <ol>
+            <li> At the top level, shows the band record label</li>
+            <li> below that it should list out all bands under their management</li>
+            <li> and below that it should display which festivals they've attended, if any.</li>
+            <li> All entries should be sorted alphabetically</li>
+        </ol>
+
+        <hr/>
+        <div ng-if='content' class='issueInAPI'>
+            {{content}}
+
+        </div>
+
+        <ul ng-repeat="row in finalArray | orderBy : 'rLabel'">
+            <li>Record Label
+                <b>
+                    <ng-container ng-if="row.rLabel != 'blank'"> {{row.rLabel}} </ng-container>
+                    <ng-container class='blankName' ng-if="row.rLabel == 'blank'"> unnamed </ng-container>
+                </b>
+
+                <ul ng-repeat="row2 in row.bandName | orderBy : 'bName'">
+                    <li>Band
+                        <b>
+                            <ng-container ng-if="row2.bName != 'blank'"> {{row2.bName}} </ng-container>
+                            <ng-container class='blankName' ng-if="row2.bName == 'blank'"> unnamed </ng-container>
+                        </b>
+                        <ul ng-repeat="row3 in row2.festival | orderBy : 'fName'">
+                            <li>
+                                <b>
+                                    <ng-container ng-if="row3.fName != 'blank'"> {{row3.fName}} </ng-container>
+                                    <ng-container class='blankName' ng-if="row3.fName == 'blank'"> unnamed </ng-container>
+                                </b> festival
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <!-- 
+
+    <hr/>
+    <h3>
+        Showing the results of the api object (as-is):
+        </h3>
+        <ul ng-repeat='festival in apiResult  track by $index'>
+            <li> {{$index}} Festival:
+                <ng-container ng-if="festival.name"> {{festival.name}} </ng-container>
+                <ng-container class='blankName' ng-if="!festival.name"> unnamed </ng-container>
+
+                <ul ng-repeat='bands in festival.bands track by $index'>
+                    Band: {{bands.name}} ... Record label:
+                    <ng-container ng-if="bands.recordLabel"> {{bands.recordLabel}} </ng-container>
+                    <ng-container class='blankName' ng-if="!bands.recordLabel"> unnamed </ng-container>
+
+                </ul>
+            </li>
+        </ul>
+    -->
+
+    </div>
+
+    <script>
+        var app = angular.module('myApp', []);
+        app.controller('eAuController', function ($scope, $http) {
+            $scope.content = '';
+            $scope.returnedValFromServer = false;
+            let apiString = `[{"name":"LOL-palooza","bands":[{"name":"Winter Primates","recordLabel":""},{"name":"Werewolf Weekday","recordLabel":"XS Recordings"},{"name":"Frank Jupiter","recordLabel":"Pacific Records"},{"name":"Jill Black","recordLabel":"Fourth Woman Records"}]},
+            {"name":"Twisted Tour","bands":[{"name":"Werewolf Weekday","recordLabel":"XS Recordings"},{"name":"Summon","recordLabel":"Outerscope"},{"name":"Squint-281"},{"name":"Auditones","recordLabel":"Marner Sis. Recording"}]},{"name":"Small Night In","bands":[{"name":"Wild Antelope","recordLabel":"Marner Sis. Recording"},{"name":"Squint-281","recordLabel":"Outerscope"},{"name":"Yanke East","recordLabel":"MEDIOCRE Music"},{"name":"Green Mild Cold Capsicum","recordLabel":"Marner Sis. Recording"},{"name":"The Black Dashes","recordLabel":"Fourth Woman Records"}]},
+            {"bands":[{"name":"Critter Girls","recordLabel":"ACR"},{"name":"Propeller","recordLabel":"Pacific Records"}]},
+            {"name":"Trainerella","bands":[{"name":"Werewolf Weekday","recordLabel":"XS Recordings"},{"name":"Wild Antelope","recordLabel":"Still Bottom Records"},{"name":"Adrian Venti","recordLabel":"Monocracy Records"},{"name":"YOUKRANE","recordLabel":"Anti Records"},{"name":"Manish Ditch","recordLabel":"ACR"}]}]`;
+
+            $scope.finalArray = [];
+
+            $scope.checkAndInsert = function (r, b, f) {
+                var rCheck = false;
+                var bCheck = false;
+
+                // unique entry for record labels
+                for (var i = 0; i < $scope.finalArray.length; i++) {
+                    rCheck = false;
+                    if ($scope.finalArray[i].rLabel == r) { rCheck = true; break; }
+                }
+                if (!rCheck) {
+                    //console.log('we can insert...');
+                    $scope.finalArray.push({ rLabel: r, bandName: [] });
+                }
+
+                // unique entry for band names
+                for (var i = 0; i < $scope.finalArray.length; i++) {
+                    bCheck = false;
+                    if ($scope.finalArray[i].rLabel == r) {
+                        for (var j = 0; j < $scope.finalArray[i].bandName.length; j++) {
+                            //console.log('checking:', $scope.finalArray[i].bandName[j].bName, ' against:', b);
+
+                            if ($scope.finalArray[i].bandName[j].bName == b) { bCheck = true; break; }
+                        }
+                        if (!bCheck) {
+                            for (var i = 0; i < $scope.finalArray.length; i++) {
+                                if ($scope.finalArray[i].rLabel == r) {
+                                    //console.log('about to insert:', b, ' for rLabel: ', r);
+                                    $scope.finalArray[i].bandName.push({ bName: b, festival: [] });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                //unique for festival names
+                for (var i = 0; i < $scope.finalArray.length; i++) {
+                    bCheck = false;
+                    if ($scope.finalArray[i].rLabel == r) {
+                        for (var j = 0; j < $scope.finalArray[i].bandName.length; j++) {
+                            if ($scope.finalArray[i].bandName[j].bName == b) {
+                                //console.log('found', r, ' and ', b);
+                                $scope.finalArray[i].bandName[j].festival.push({ fName: f });
+                            }
+                        }
+                    }
+                }
+            }
+
+            $scope.feedPrepareData = function (dataToSort) {
+
+                for (var i = 0; i < dataToSort.length; i++) {
+                    //console.log(dataToSort[i].name);
+                    var festival = 'blank';
+                    (dataToSort[i].name) ? festival = dataToSort[i].name : '';
+
+                    for (var j = 0; j < dataToSort[i].bands.length; j++) {
+                        var bandName = 'blank';
+                        var recordLabel = 'blank';
+                        //console.log(dataToSort[i].bands[j].name, dataToSort[i].bands[j].recordLabel);
+                        (dataToSort[i].bands[j].name) ? bandName = dataToSort[i].bands[j].name : '';
+                        (dataToSort[i].bands[j].recordLabel) ? recordLabel = dataToSort[i].bands[j].recordLabel : '';
+
+                        $scope.checkAndInsert(recordLabel, bandName, festival);
+
+                    }
+                }
+                console.log('Final data ready for display:', $scope.finalArray);
+            }
+
+
+            $scope.loadWithOldTestData = function () {
+                $scope.apiResult = JSON.parse(apiString);
+                console.log('We will load the previously fetched data:', $scope.apiResult);
+                $scope.feedPrepareData($scope.apiResult);
+            }
+
+            $scope.url = "/energyAustraliaURL";
+
+            $http.get($scope.url)
+                .then(function (response) {
+                    // success case
+                    $scope.returnedValFromServer = true;
+                    if (response.data.length > 0) {
+
+                        console.log('response from server:', response.data);
+                        $scope.apiResult = response.data;
+                        console.log('we will process:', $scope.apiResult);
+                        $scope.feedPrepareData($scope.apiResult);
+
+                    } else {
+                        $scope.content = "We received blank/null data from the API... loading previously fetched data...";
+                        alert($scope.content);
+                        console.log(response);
+                        $scope.loadWithOldTestData();
+                    }
+
+                }, function (response) {
+                    // error case - load local testing data
+                    $scope.content = "we received status code: [" + response.status + "] and message: [" + response.statusText + "]... loading previously fetched data...";
+                    alert($scope.content);
+                    console.log(response);
+                    $scope.loadWithOldTestData();
+                });
+        });
+    </script>
+
+    <style>
+        .blankName {
+            color: red;
+        }
+
+        * {
+            font-family: sans-serif;
+        }
+
+        li {
+            padding-bottom: 2px;
+        }
+
+        div>ul>li>ul {
+            margin-top: 5px;
+        }
+
+        div>ul>li {
+            padding-top: 5px;
+        }
+
+        div>ul:nth-child(even) {
+            background: rgb(213, 244, 255);
+        }
+
+        div>ul:nth-child(odd) {
+            background: rgb(213, 255, 237);
+        }
+
+        .issueInAPI {
+            background: #fd6969;
+            color: #fff;
+            padding: 10px;
+        }
+    </style>
+
+</body>
+
+</html>
